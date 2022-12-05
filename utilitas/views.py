@@ -32,7 +32,6 @@ class BaseView(APIView, CustomPagination):
     fields_param = "fields"
     sorts_param = "sorts"
     expand_param = "expand"
-
     # customizing the response format
     renderer_classes = [CustomRenderer, BrowsableAPIRenderer]
 
@@ -178,9 +177,12 @@ class BaseListView(BaseView):
     name = "Base list view"
     metadata_class = CustomMetadata
 
-    @swagger_auto_schema(
-        manual_parameters=[size_param, page_param, sorts_param, fields_param, expand_param]
-    )
+    def __init_subclass__(cls, **kwargs):
+        cls._is_internal = False
+
+    # @swagger_auto_schema(
+    #     manual_parameters=[size_param_getter(), page_param_getter(), sorts_param_getter(sorts_param), fields_param_getter(fields_param), expand_param_getter(expand_param)]
+    # )
     def get(self, request: Request):
         self.description = self.model.__doc__
 
@@ -235,6 +237,10 @@ class BaseDetailsView(BaseView):
     name = "Base details view"
     metadata_class = CustomMetadata
 
+
+    def __init_subclass__(cls, **kwargs):
+        cls._is_internal = False
+
     def _send_not_found(self, obj_id: int):
         return self.send_response(
             True,
@@ -249,9 +255,9 @@ class BaseDetailsView(BaseView):
 
 
     # get-one
-    @swagger_auto_schema(
-        manual_parameters=[fields_param, expand_param]
-    )
+    # @swagger_auto_schema(
+    #     manual_parameters=[fields_param, expand_param]
+    # )
     def get(self, request: Request, obj_id: int):
         self.description = self.model.__doc__
 
@@ -292,6 +298,10 @@ class BaseSearchView(BaseView):
     _is_internal = True
     name = "Base search view"
 
+
+    def __init_subclass__(cls, **kwargs):
+        cls._is_internal = False
+
     # validating with FilterParamSerializer to make sure the filter_params object is of the right format
     def validate_filter_params(self, to_be_validated):
         validated_data = []
@@ -322,10 +332,10 @@ class BaseSearchView(BaseView):
 
         return self.build_filter_params(validated_data)
 
-    @swagger_auto_schema(
-        request_body=FilterParamsSerializer,
-        manual_parameters=[size_param, page_param, sorts_param, fields_param, expand_param],
-    )
+    # @swagger_auto_schema(
+    #     request_body=FilterParamsSerializer,
+    #     manual_parameters=[size_param, page_param, sorts_param, fields_param, expand_param],
+    # )
 
     # search
     def post(self, request: Request):
