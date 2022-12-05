@@ -1,0 +1,10 @@
+utilitest
+django_utilitas.egg-info
+dist
+build
+.vscode
+.idea
+.eggs
+__pycache__
+env
+venv
