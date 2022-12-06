@@ -16,7 +16,7 @@ from utilitas.swagger_serializers import FilterParamsSerializer
 from utilitas.swagger_query_params import *
 
 from utilitas.models import BaseModel
-from utilitas.serializers import BaseSerializer
+from utilitas.serializers import BaseSerializer, BaseModelSerializer
 
 
 class BaseView(APIView, CustomPagination):
@@ -37,25 +37,24 @@ class BaseView(APIView, CustomPagination):
 
     related_fields = []
 
-    def __init_subclass__(cls, **kwargs):
-        if not cls._is_internal:
-            for i in [{"var":"model", "parent_class":BaseModel},{"var":"serializer", "parent_class":BaseSerializer}]:
+    @classmethod
+    def _validate_attributes(cls, **kwargs):
+        for i in [{"var": "model", "parent_class": BaseModel},
+                  {"var": "serializer", "parent_class": (BaseSerializer, BaseModelSerializer)}]:
 
-                # making sure certain class variables are implemented.
-                if not getattr(cls, i["var"]):
-                    raise NotImplementedError(f"{cls} must implement the '{i['var']}' variable.")
-                
-                # making sure the implemented variables are of the right class.
-                if  not(hasattr(getattr(cls,i["var"]), "__dict__") and issubclass(getattr(cls,i["var"]), i["parent_class"])): 
-                    raise TypeError(f"'{i['var']}' must inherit {i['parent_class']}")
-            for i in ["sorts_param", "fields_param", "expand_param"]:
-                if type(getattr(cls, i)) != str:
-                    raise TypeError(f"Variable '{i}' in {cls} must be a string.")
+            # making sure certain class variables are implemented.
+            if not getattr(cls, i["var"]):
+                raise NotImplementedError(f"{cls} must implement the '{i['var']}' variable.")
 
-        
-        
-        
-        return super().__init_subclass__(**kwargs)
+            # making sure the implemented variables are of the right class.
+            if not (hasattr(getattr(cls, i["var"]), "__dict__") and issubclass(getattr(cls, i["var"]),
+                                                                               i["parent_class"])):
+                raise TypeError(f"'{i['var']}' in {cls} must be a subclass {i['parent_class']} instead of a {type(getattr(cls,i['var']))}")
+        for i in ["sorts_param", "fields_param", "expand_param"]:
+            if type(getattr(cls, i)) != str:
+                raise TypeError(f"Variable '{i}' in {cls} must be a string.")
+
+        return None
 
     # getting query_params
     def get_query_params(self, request: Request):
@@ -171,14 +170,14 @@ class BaseView(APIView, CustomPagination):
 
 class BaseListView(BaseView):
 
-    
-    _is_internal = True
 
     name = "Base list view"
     metadata_class = CustomMetadata
 
     def __init_subclass__(cls, **kwargs):
-        cls._is_internal = False
+        cls._validate_attributes(**kwargs)
+        return super().__init_subclass__(**kwargs)
+
 
     # @swagger_auto_schema(
     #     manual_parameters=[size_param_getter(), page_param_getter(), sorts_param_getter(sorts_param), fields_param_getter(fields_param), expand_param_getter(expand_param)]
@@ -239,7 +238,8 @@ class BaseDetailsView(BaseView):
 
 
     def __init_subclass__(cls, **kwargs):
-        cls._is_internal = False
+        cls._validate_attributes(**kwargs)
+        return super().__init_subclass__(**kwargs)
 
     def _send_not_found(self, obj_id: int):
         return self.send_response(
@@ -300,7 +300,8 @@ class BaseSearchView(BaseView):
 
 
     def __init_subclass__(cls, **kwargs):
-        cls._is_internal = False
+        cls._validate_attributes(**kwargs)
+        return super().__init_subclass__(**kwargs)
 
     # validating with FilterParamSerializer to make sure the filter_params object is of the right format
     def validate_filter_params(self, to_be_validated):
