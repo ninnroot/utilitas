@@ -13,5 +13,10 @@ Here is a summarized version of Utilitas' features:
 - nested read serializers
 - limiting the response' field
 
+## Installation
+```bash
+pip install django-utilitas
+```
+
 ## Documentation
 Docs are still in progress. I have assignments to do :(
