@@ -262,7 +262,7 @@ class BaseDetailsView(BaseView):
         self.description = self.model.__doc__
 
         query_params = self.get_query_params(request)
-
+        query_params.pop("sorts")
         obj = self._get_object(obj_id)
         if obj is None:
             return self._send_not_found(obj_id)
