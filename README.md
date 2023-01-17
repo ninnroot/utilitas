@@ -12,6 +12,7 @@ Here is a summarized version of Utilitas' features:
 - swagger API support
 - nested read serializers
 - limiting the response' field
+- bulk creation of models
 
 ## Installation
 ```bash
@@ -57,3 +58,53 @@ urlpatterns = [
 Then, when you go to your swagger endpoint, you should be able to see something like this:
 ![image](https://user-images.githubusercontent.com/70014160/206143080-2b73ff46-35b3-4241-8502-76262e8640da.png)
 
+## Bulk Creation
+When a POST request is made to list endpoints with the `bulk` query parameter set to a truthy value, a `ListSerializer` will be used to perform the creation process. 
+
+### Request example
+```python
+import requests
+
+requests.post(
+    "api/books/?bulk=True",
+    {
+        # need to set this 'objects' parameter in the request body
+        "objects": [
+            {"title": "The Hobbit", "author": "J. R. R. Tolkein"},
+            {"title": "History of Burma", "author": "G. E. Harvey"}
+        ]
+    }   
+)
+```
+
+### Implementation
+You can either inherit the Meta class from the `BaseModelSerializer` class
+```python
+class BookSerializer(BaseModelSerializer):
+    class Meta(BaseModelSerializer.Meta):
+        model = Book
+        fields = "__all__"
+```
+Or, set the `list_serializer_class` option to `utilitas.serializers.BaseListSerializer`. (more information here: https://www.django-rest-framework.org/api-guide/serializers/#listserializer)
+```python
+from utilitas.serializers import BaseListSerializer
+
+class BookSerializer(BaseModelSerializer):
+    class Meta:
+        model = Book
+        fields = "__all__"
+        list_serializer_class = BaseListSerializer
+```
+
+## Changelog
+- 1.2.0 
+    - added bulk creation
+
+- 1.1.4 
+    - bug fixes
+
+- 1.1.3 
+    - bug fixes
+
+- 1.1.2 (the first usable version)
+    - bug fixes
