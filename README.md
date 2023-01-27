@@ -97,6 +97,10 @@ class BookSerializer(BaseModelSerializer):
 ```
 
 ## Changelog
+- 1.2.1
+    - added a middleware for logging database queries in each request
+    - bug fixes
+
 - 1.2.0 
     - added bulk creation
 
