@@ -27,8 +27,8 @@ class BaseSerializer(serializers.Serializer):
 
 class FilterParamSerializer(BaseSerializer):
     field_name = serializers.CharField(max_length=256, required=True)
-    operator = serializers.CharField(max_length=16, default="exact")
-    value = serializers.CharField(max_length=32, required=True)
+    operator = serializers.CharField(max_length=256, default="exact")
+    value = serializers.CharField(max_length=256, required=True)
 
     def validate(self, data, *args, **kwargs):
         if data["operator"] not in self.context["model"].valid_operators:
