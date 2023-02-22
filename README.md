@@ -98,6 +98,8 @@ class BookSerializer(BaseModelSerializer):
 
 ## Changelog
 
+- 1.2.3
+    - lowered required Python version
 - 1.2.2
     - incrased character limit for `FilterParamSerializer`'s fields.
 - 1.2.1
