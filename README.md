@@ -98,10 +98,12 @@ class BookSerializer(BaseModelSerializer):
 
 ## Changelog
 
+- 1.2.4
+    - fixed bug in pagination
 - 1.2.3
     - lowered required Python version
 - 1.2.2
-    - incrased character limit for `FilterParamSerializer`'s fields.
+    - increased character limit for `FilterParamSerializer`'s fields.
 - 1.2.1
     - added a middleware for logging database queries in each request
     - bug fixes

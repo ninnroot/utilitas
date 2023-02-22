@@ -9,8 +9,10 @@ class CustomPagination(PageNumberPagination):
     page_size = 10
 
     def get_page_size(self, request):
-        if int(self.request.query_params.get(self.page_size_query_param, 0)) == -1:
-            return self.model.objects.count()
+        if int(request.query_params.get(self.page_size_query_param, 0)) == -1:
+            p_size = self.model.objects.count()
+            if p_size != 0:
+                return self.model.objects.count()
         return super().get_page_size(request)
 
     def get_count_per_page(self):
