@@ -98,6 +98,8 @@ class BookSerializer(BaseModelSerializer):
 
 ## Changelog
 
+- 1.2.5
+    - added `exclude_params` option in search endpoints.
 - 1.2.4
     - fixed bug in pagination
 - 1.2.3
