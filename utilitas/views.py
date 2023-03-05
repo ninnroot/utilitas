@@ -77,10 +77,13 @@ class BaseView(APIView, CustomPagination):
 
     # querying data
     def get_queryset(
-        self, request: Request, filter_params=None, fields=None, sorts=None, expand=None
+        self, request: Request, filter_params=None,exclude_params=None, fields=None, sorts=None, expand=None
     ):
         if filter_params is None:
             filter_params = {}
+
+        if exclude_params is None:
+            exclude_params = {}
 
         if fields is None:
             fields = []
@@ -89,7 +92,7 @@ class BaseView(APIView, CustomPagination):
             expand = []
         # query from the database
         queryset = (
-            self.model.objects.filter(**filter_params)
+            self.model.objects.filter(**filter_params).exclude(**exclude_params)
             .prefetch_related(*self.related_fields)
             .all()
             .order_by(*sorts)
@@ -332,6 +335,12 @@ class BaseSearchView(BaseView):
         validated_data = self.validate_filter_params(filter_params)
 
         return self.build_filter_params(validated_data)
+    
+    # get exclude_params from the request
+    def get_exclude_params(self, request: Request):
+        exclude_params = request.data.get("exclude_params", {})
+        validated_exclude_params = self.validate_body_params(exclude_params)
+        return self.build_body_params(validated_exclude_params)
 
     # @swagger_auto_schema(
     #     request_body=FilterParamsSerializer,
@@ -345,13 +354,14 @@ class BaseSearchView(BaseView):
         try:
             query_params = self.get_query_params(request)
             filter_params = self.get_filter_params(request)
+            exclude_params = self.get_exclude_params(request)
         except BadRequest as e:
             return self.send_response(
                 True, "bad_request", {"details": str(e)}, status=400
             )
 
         serialized_data = self.get_queryset(
-            request, filter_params, **query_params
+            request, filter_params,exclude_params, **query_params
         )
 
         # return the serialized queryset in a standardized manner
