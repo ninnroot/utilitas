@@ -305,17 +305,6 @@ class BaseSearchView(BaseView):
     def __init_subclass__(cls, **kwargs):
         cls._validate_attributes(**kwargs)
         return super().__init_subclass__(**kwargs)
-
-    # validating with FilterParamSerializer to make sure the filter_params object is of the right format
-    def validate_filter_params(self, to_be_validated):
-        validated_data = []
-        for i in to_be_validated:
-            x = FilterParamSerializer(data=i, context={"model": self.model})
-            if not x.is_valid(raise_exception=True):
-                raise BadRequest(x.errors)
-            validated_data.append(x.data)
-
-        return validated_data
     
     def validate_body_params(self, to_be_validated):
         validated_data = []
@@ -326,6 +315,24 @@ class BaseSearchView(BaseView):
             validated_data.append(x.data)
 
         return validated_data
+    
+    @staticmethod
+    def build_body_params(body_params):
+        params_dict = {}
+        for i in body_params:
+            params_dict[i["field_name"] + "__" + i["operator"]] = (
+                i["value"].split(",") if i["operator"] == "in" else i["value"]
+            )
+
+        return params_dict
+
+    # validating with FilterParamSerializer to make sure the filter_params object is of the right format
+    def get_filter_params(self, request: Request):
+        filter_params = request.data.get("filter_params", {})
+        validated_filter_params = self.validate_body_params(filter_params)
+        return self.build_body_params(validated_filter_params)
+    
+
 
     # building a filter_params dict to be used in querying
     @staticmethod

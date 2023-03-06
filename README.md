@@ -98,6 +98,8 @@ class BookSerializer(BaseModelSerializer):
 
 ## Changelog
 
+- 1.2.7
+    - bug fixes
 - 1.2.6
     - bug fixes
 - 1.2.5
