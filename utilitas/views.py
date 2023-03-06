@@ -348,10 +348,8 @@ class BaseSearchView(BaseView):
     # get filter_params from the request
     def get_filter_params(self, request: Request):
         filter_params = request.data.get("filter_params", {})
-
-        validated_data = self.validate_filter_params(filter_params)
-
-        return self.build_filter_params(validated_data)
+        validated_filter_params = self.validate_body_params(filter_params)
+        return self.build_body_params(validated_filter_params)
     
     # get exclude_params from the request
     def get_exclude_params(self, request: Request):
