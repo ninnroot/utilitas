@@ -316,6 +316,16 @@ class BaseSearchView(BaseView):
             validated_data.append(x.data)
 
         return validated_data
+    
+    def validate_body_params(self, to_be_validated):
+        validated_data = []
+        for i in to_be_validated:
+            x = FilterParamSerializer(data=i, context={"model": self.model})
+            if not x.is_valid(raise_exception=True):
+                raise BadRequest(x.errors)
+            validated_data.append(x.data)
+
+        return validated_data
 
     # building a filter_params dict to be used in querying
     @staticmethod
