@@ -98,6 +98,8 @@ class BookSerializer(BaseModelSerializer):
 
 ## Changelog
 
+- 1.2.9
+    - renamed file from `migrations.py` to `middlewares.py` (my stupid mistake in the first place)
 - 1.2.8
     - bug fixes
 - 1.2.7
