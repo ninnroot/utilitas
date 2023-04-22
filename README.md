@@ -98,6 +98,8 @@ class BookSerializer(BaseModelSerializer):
 
 ## Changelog
 
+- 1.3.0
+    - removed the need for `related_fields` parameter. Prefetching related fields is now done automatically using the `expand` parameter provided by the client.
 - 1.2.9
     - renamed file from `migrations.py` to `middlewares.py` (my stupid mistake in the first place)
 - 1.2.8

@@ -35,7 +35,6 @@ class BaseView(APIView, CustomPagination):
     # customizing the response format
     renderer_classes = [CustomRenderer, BrowsableAPIRenderer]
 
-    related_fields = []
 
     @classmethod
     def _validate_attributes(cls, **kwargs):
@@ -91,9 +90,14 @@ class BaseView(APIView, CustomPagination):
         if expand is None:
             expand = []
         # query from the database
+
+        translated_expand = []
+        for i in expand:
+            translated_expand.append(i.replace(".", "__"))
+
         queryset = (
             self.model.objects.filter(**filter_params).exclude(**exclude_params)
-            .prefetch_related(*self.related_fields)
+            .prefetch_related(*translated_expand)
             .all()
             .order_by(*sorts)
         )
