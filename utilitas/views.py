@@ -18,6 +18,24 @@ from utilitas.swagger_query_params import *
 from utilitas.models import BaseModel
 from utilitas.serializers import BaseSerializer, BaseModelSerializer
 
+from django.db.models.base import ModelBase
+
+def get_prefetchable_fields(instance):
+    opts = instance._meta
+    ret = []
+    for field in opts.get_fields():
+        if not isinstance(instance, ModelBase):
+            rel_obj_descriptor = getattr(instance.__class__, field.name, None)
+        else:
+            rel_obj_descriptor = getattr(instance, field.name, None)
+        if rel_obj_descriptor:
+            if hasattr(rel_obj_descriptor, 'get_prefetch_queryset'):
+                ret.append(field.name)
+            else:
+                rel_obj = getattr(instance, field.name)
+                if hasattr(rel_obj, 'get_prefetch_queryset'):
+                    ret.append(field.name)
+    return ret
 
 class BaseView(APIView, CustomPagination):
     name: str = "Base view (not cringe view)"
@@ -35,6 +53,14 @@ class BaseView(APIView, CustomPagination):
     # customizing the response format
     renderer_classes = [CustomRenderer, BrowsableAPIRenderer]
 
+    # Some `expand` parameters cannot be present in the model's foreign keys (client's mistakes). 
+    # To avoid being a chatty API, we will just quietly ignore thier mistakes.
+    def _translate_expand_params(self, expand):
+        translated_expand = []
+        # Replacing dots with Django ORM's format.
+        for i in expand:
+            translated_expand.append(i.replace(".", "__"))
+        return set(translated_expand).intersection(set(get_prefetchable_fields(self.model)))
 
     @classmethod
     def _validate_attributes(cls, **kwargs):
@@ -91,9 +117,7 @@ class BaseView(APIView, CustomPagination):
             expand = []
         # query from the database
 
-        translated_expand = []
-        for i in expand:
-            translated_expand.append(i.replace(".", "__"))
+        translated_expand = self._translate_expand_params(expand)
 
         queryset = (
             self.model.objects.filter(**filter_params).exclude(**exclude_params)

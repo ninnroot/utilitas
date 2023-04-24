@@ -96,8 +96,12 @@ class BookSerializer(BaseModelSerializer):
         list_serializer_class = BaseListSerializer
 ```
 
+For more information about django-utilitas, please read the architecture document [here](./architecture.md)
+
 ## Changelog
 
+- 1.3.1
+    - now, the API won't return 500 if missing foreign keys are provided in the `expand` parameter.
 - 1.3.0
     - removed the need for `related_fields` parameter. Prefetching related fields is now done automatically using the `expand` parameter provided by the client.
 - 1.2.9
