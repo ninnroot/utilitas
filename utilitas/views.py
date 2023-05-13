@@ -6,7 +6,15 @@ from django.core.exceptions import BadRequest
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.renderers import BrowsableAPIRenderer
 from rest_framework.views import APIView, Request, Response, status
-from django.db.models import QuerySet, CharField, TextField, BooleanField, BigAutoField, DateField, DateTimeField
+from django.db.models import (
+    QuerySet,
+    CharField,
+    TextField,
+    BooleanField,
+    BigAutoField,
+    DateField,
+    DateTimeField,
+)
 from django.http import HttpResponse
 
 from utilitas.metadata import CustomMetadata
@@ -115,17 +123,23 @@ class BaseView(APIView, CustomPagination):
         return self.send_response(
             False, "metadata", {"data": data}, status=status.HTTP_200_OK
         )
-    
+
         # sending a csv file as response
+
     def send_csv(self, request: Request, data: QuerySet, fields):
         response = HttpResponse(
             content_type="text/csv",
-            headers={"Content-Disposition": "attachment; filename='data.csv'"}
+            headers={"Content-Disposition": "attachment; filename='data.csv'"},
         )
         if len(fields) == 0:
             # TODO: clean this later
-            fields = [i.name for i in data.model._meta.get_fields() if
-                      isinstance(i, (CharField, TextField, BigAutoField, DateField, DateTimeField))]
+            fields = [
+                i.name
+                for i in data.model._meta.get_fields()
+                if isinstance(
+                    i, (CharField, TextField, BigAutoField, DateField, DateTimeField)
+                )
+            ]
         writer = csv.writer(response)
         writer.writerow(fields)
         for i in data:
@@ -136,7 +150,7 @@ class BaseView(APIView, CustomPagination):
         return response
 
     def prepare_queryset(
-                    self,
+        self,
         request: Request,
         filter_params=None,
         exclude_params=None,
@@ -170,8 +184,14 @@ class BaseView(APIView, CustomPagination):
 
     # querying data
     def get_queryset(
-            self, request: Request, filter_params=None, exclude_params=None, fields=None, sorts=None, expand=None,
-            is_csv=False
+        self,
+        request: Request,
+        filter_params=None,
+        exclude_params=None,
+        fields=None,
+        sorts=None,
+        expand=None,
+        is_csv=False,
     ):
         if filter_params is None:
             filter_params = {}
@@ -185,16 +205,16 @@ class BaseView(APIView, CustomPagination):
         if expand is None:
             expand = []
         if not is_csv:
-
             # query from the database
 
             translated_expand = self._translate_expand_params(expand)
 
             queryset = (
-                self.model.objects.filter(**filter_params).exclude(**exclude_params)
-                    .prefetch_related(*translated_expand)
-                    .all()
-                    .order_by(*sorts)
+                self.model.objects.filter(**filter_params)
+                .exclude(**exclude_params)
+                .prefetch_related(*translated_expand)
+                .all()
+                .order_by(*sorts)
             )
 
             # paginate the queryset
@@ -211,9 +231,11 @@ class BaseView(APIView, CustomPagination):
 
             return serialized_data
         else:
-            return self.model.objects.filter(**filter_params).exclude(**exclude_params).all()
-
-
+            return (
+                self.model.objects.filter(**filter_params)
+                .exclude(**exclude_params)
+                .all()
+            )
 
     # make sure the fields are actually present in the model
     def fields_are_valid(self, fields: list) -> bool:
@@ -295,10 +317,15 @@ class BaseListView(BaseView):
         # if meta query_param is present, return metadata of the current endpoint
         if request.GET.get("meta"):
             return self.send_metadata(request)
-        
+
         if request.query_params.get("csv"):
-            return self.send_csv(request, self.get_queryset(request, filter_params, exclude_params, **query_params),
-                                 fields=query_params["fields"])
+            return self.send_csv(
+                request,
+                self.get_queryset(
+                    request, filter_params, exclude_params, **query_params
+                ),
+                fields=query_params["fields"],
+            )
 
         try:
             query_params = self.get_query_params(request)
@@ -473,10 +500,15 @@ class BaseSearchView(BaseView):
             return self.send_response(
                 True, "bad_request", {"details": str(e)}, status=400
             )
-        
+
         if request.query_params.get("csv"):
-            return self.send_csv(request, self.get_queryset(request, filter_params, exclude_params, **query_params),
-                                 fields=query_params["fields"])
+            return self.send_csv(
+                request,
+                self.get_queryset(
+                    request, filter_params, exclude_params, **query_params
+                ),
+                fields=query_params["fields"],
+            )
 
         serialized_data = self.get_queryset(
             request, filter_params, exclude_params, **query_params
