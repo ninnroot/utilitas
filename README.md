@@ -111,9 +111,10 @@ requests.get("api/books?csv=true")
 
 ## Changelog
 
+- 1.3.3
+    - forgot to add csv library. hehe.
 - 1.3.2
     - added a csv-returning functionality.
-
 - 1.3.1
     - now, the API won't return 500 if missing foreign keys are provided in the `expand` parameter.
 - 1.3.0
