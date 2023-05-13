@@ -98,7 +98,21 @@ class BookSerializer(BaseModelSerializer):
 
 For more information about django-utilitas, please read the architecture document [here](./architecture.md)
 
+## Getting a CSV response
+Client just need to set a query parameter named `csv` to true. This works in BaseListView and BaseSearchView instances.
+
+### Request example
+```python
+import requests
+
+requests.get("api/books?csv=true")
+```
+
+
 ## Changelog
+
+- 1.3.2
+    - added a csv-returning functionality.
 
 - 1.3.1
     - now, the API won't return 500 if missing foreign keys are provided in the `expand` parameter.

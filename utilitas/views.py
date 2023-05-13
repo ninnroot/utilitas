@@ -6,7 +6,8 @@ from django.core.exceptions import BadRequest
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.renderers import BrowsableAPIRenderer
 from rest_framework.views import APIView, Request, Response, status
-
+from django.db.models import QuerySet, CharField, TextField, BooleanField, BigAutoField, DateField, DateTimeField
+from django.http import HttpResponse
 
 from utilitas.metadata import CustomMetadata
 from utilitas.pagination import CustomPagination
@@ -20,6 +21,7 @@ from utilitas.serializers import BaseSerializer, BaseModelSerializer
 
 from django.db.models.base import ModelBase
 
+
 def get_prefetchable_fields(instance):
     opts = instance._meta
     ret = []
@@ -29,13 +31,14 @@ def get_prefetchable_fields(instance):
         else:
             rel_obj_descriptor = getattr(instance, field.name, None)
         if rel_obj_descriptor:
-            if hasattr(rel_obj_descriptor, 'get_prefetch_queryset'):
+            if hasattr(rel_obj_descriptor, "get_prefetch_queryset"):
                 ret.append(field.name)
             else:
                 rel_obj = getattr(instance, field.name)
-                if hasattr(rel_obj, 'get_prefetch_queryset'):
+                if hasattr(rel_obj, "get_prefetch_queryset"):
                     ret.append(field.name)
     return ret
+
 
 class BaseView(APIView, CustomPagination):
     name: str = "Base view (not cringe view)"
@@ -53,28 +56,40 @@ class BaseView(APIView, CustomPagination):
     # customizing the response format
     renderer_classes = [CustomRenderer, BrowsableAPIRenderer]
 
-    # Some `expand` parameters cannot be present in the model's foreign keys (client's mistakes). 
+    # Some `expand` parameters cannot be present in the model's foreign keys (client's mistakes).
     # To avoid being a chatty API, we will just quietly ignore thier mistakes.
     def _translate_expand_params(self, expand):
         translated_expand = []
         # Replacing dots with Django ORM's format.
         for i in expand:
             translated_expand.append(i.replace(".", "__"))
-        return set(translated_expand).intersection(set(get_prefetchable_fields(self.model)))
+        return set(translated_expand).intersection(
+            set(get_prefetchable_fields(self.model))
+        )
 
     @classmethod
     def _validate_attributes(cls, **kwargs):
-        for i in [{"var": "model", "parent_class": BaseModel},
-                  {"var": "serializer", "parent_class": (BaseSerializer, BaseModelSerializer)}]:
-
+        for i in [
+            {"var": "model", "parent_class": BaseModel},
+            {
+                "var": "serializer",
+                "parent_class": (BaseSerializer, BaseModelSerializer),
+            },
+        ]:
             # making sure certain class variables are implemented.
             if not getattr(cls, i["var"]):
-                raise NotImplementedError(f"{cls} must implement the '{i['var']}' variable.")
+                raise NotImplementedError(
+                    f"{cls} must implement the '{i['var']}' variable."
+                )
 
             # making sure the implemented variables are of the right class.
-            if not (hasattr(getattr(cls, i["var"]), "__dict__") and issubclass(getattr(cls, i["var"]),
-                                                                               i["parent_class"])):
-                raise TypeError(f"'{i['var']}' in {cls} must be a subclass {i['parent_class']} instead of a {type(getattr(cls,i['var']))}")
+            if not (
+                hasattr(getattr(cls, i["var"]), "__dict__")
+                and issubclass(getattr(cls, i["var"]), i["parent_class"])
+            ):
+                raise TypeError(
+                    f"'{i['var']}' in {cls} must be a subclass {i['parent_class']} instead of a {type(getattr(cls,i['var']))}"
+                )
         for i in ["sorts_param", "fields_param", "expand_param"]:
             if type(getattr(cls, i)) != str:
                 raise TypeError(f"Variable '{i}' in {cls} must be a string.")
@@ -87,8 +102,9 @@ class BaseView(APIView, CustomPagination):
         dic["sorts"] = self.get_sort_param(request)
         dic["expand"] = self.get_expand_param(request)
         dic["fields"] = self.get_fields_param(request)
-        return dic
+        dic["is_csv"] = request.query_params.get("csv")
 
+        return dic
 
     # sending metadata
     def send_metadata(self, request: Request):
@@ -99,10 +115,34 @@ class BaseView(APIView, CustomPagination):
         return self.send_response(
             False, "metadata", {"data": data}, status=status.HTTP_200_OK
         )
+    
+        # sending a csv file as response
+    def send_csv(self, request: Request, data: QuerySet, fields):
+        response = HttpResponse(
+            content_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename='data.csv'"}
+        )
+        if len(fields) == 0:
+            # TODO: clean this later
+            fields = [i.name for i in data.model._meta.get_fields() if
+                      isinstance(i, (CharField, TextField, BigAutoField, DateField, DateTimeField))]
+        writer = csv.writer(response)
+        writer.writerow(fields)
+        for i in data:
+            lst = []
+            for j in fields:
+                lst.append(getattr(i, j))
+            writer.writerow(lst)
+        return response
 
-    # querying data
-    def get_queryset(
-        self, request: Request, filter_params=None,exclude_params=None, fields=None, sorts=None, expand=None
+    def prepare_queryset(
+                    self,
+        request: Request,
+        filter_params=None,
+        exclude_params=None,
+        fields=None,
+        sorts=None,
+        expand=None,
     ):
         if filter_params is None:
             filter_params = {}
@@ -120,25 +160,60 @@ class BaseView(APIView, CustomPagination):
         translated_expand = self._translate_expand_params(expand)
 
         queryset = (
-            self.model.objects.filter(**filter_params).exclude(**exclude_params)
+            self.model.objects.filter(**filter_params)
+            .exclude(**exclude_params)
             .prefetch_related(*translated_expand)
             .all()
             .order_by(*sorts)
         )
+        return queryset
 
-        # paginate the queryset
-        paginated_data = self.paginate_queryset(queryset, request)
+    # querying data
+    def get_queryset(
+            self, request: Request, filter_params=None, exclude_params=None, fields=None, sorts=None, expand=None,
+            is_csv=False
+    ):
+        if filter_params is None:
+            filter_params = {}
 
-        # serialize the paginated data
-        serialized_data = self.get_serializer(
-            paginated_data,
-            many=True,
-            fields=fields,
-            expand=expand,
-            context={"model": self.model},
-        )
+        if exclude_params is None:
+            exclude_params = {}
 
-        return serialized_data
+        if fields is None:
+            fields = []
+
+        if expand is None:
+            expand = []
+        if not is_csv:
+
+            # query from the database
+
+            translated_expand = self._translate_expand_params(expand)
+
+            queryset = (
+                self.model.objects.filter(**filter_params).exclude(**exclude_params)
+                    .prefetch_related(*translated_expand)
+                    .all()
+                    .order_by(*sorts)
+            )
+
+            # paginate the queryset
+            paginated_data = self.paginate_queryset(queryset, request)
+
+            # serialize the paginated data
+            serialized_data = self.get_serializer(
+                paginated_data,
+                many=True,
+                fields=fields,
+                expand=expand,
+                context={"model": self.model},
+            )
+
+            return serialized_data
+        else:
+            return self.model.objects.filter(**filter_params).exclude(**exclude_params).all()
+
+
 
     # make sure the fields are actually present in the model
     def fields_are_valid(self, fields: list) -> bool:
@@ -153,9 +228,13 @@ class BaseView(APIView, CustomPagination):
 
     # get the "sort" query param
     def get_sort_param(self, request: Request):
-        sorts = request.query_params.get(self.sorts_param, [])  # get base64 encoded string
+        sorts = request.query_params.get(
+            self.sorts_param, []
+        )  # get base64 encoded string
         if sorts:
-            sorts = self.decode_query_param(sorts, self.sorts_param)  # decode base64 string
+            sorts = self.decode_query_param(
+                sorts, self.sorts_param
+            )  # decode base64 string
             rmv_sign_sort = [sort.replace("-", "") for sort in sorts]
             if not self.fields_are_valid(rmv_sign_sort):
                 raise BadRequest(
@@ -200,15 +279,12 @@ class BaseView(APIView, CustomPagination):
 
 
 class BaseListView(BaseView):
-
-
     name = "Base list view"
     metadata_class = CustomMetadata
 
     def __init_subclass__(cls, **kwargs):
         cls._validate_attributes(**kwargs)
         return super().__init_subclass__(**kwargs)
-
 
     # @swagger_auto_schema(
     #     manual_parameters=[size_param_getter(), page_param_getter(), sorts_param_getter(sorts_param), fields_param_getter(fields_param), expand_param_getter(expand_param)]
@@ -219,6 +295,10 @@ class BaseListView(BaseView):
         # if meta query_param is present, return metadata of the current endpoint
         if request.GET.get("meta"):
             return self.send_metadata(request)
+        
+        if request.query_params.get("csv"):
+            return self.send_csv(request, self.get_queryset(request, filter_params, exclude_params, **query_params),
+                                 fields=query_params["fields"])
 
         try:
             query_params = self.get_query_params(request)
@@ -227,9 +307,7 @@ class BaseListView(BaseView):
                 True, "bad_request", {"details": str(e)}, status=400
             )
 
-        serialized_data = self.get_queryset(
-            request, **query_params
-        )
+        serialized_data = self.get_queryset(request, **query_params)
 
         # return the serialized queryset in a standardized manner
         return self.send_response(
@@ -241,7 +319,6 @@ class BaseListView(BaseView):
 
     # create
     def post(self, request: Request):
-
         serialized_data = self.get_serializer(
             data=request.data,
         )
@@ -267,7 +344,6 @@ class BaseDetailsView(BaseView):
     name = "Base details view"
     metadata_class = CustomMetadata
 
-
     def __init_subclass__(cls, **kwargs):
         cls._validate_attributes(**kwargs)
         return super().__init_subclass__(**kwargs)
@@ -283,7 +359,6 @@ class BaseDetailsView(BaseView):
     def _get_object(self, obj_id: int):
         obj = self.model.objects.filter(pk=obj_id).first()
         return obj
-
 
     # get-one
     # @swagger_auto_schema(
@@ -329,11 +404,10 @@ class BaseSearchView(BaseView):
     _is_internal = True
     name = "Base search view"
 
-
     def __init_subclass__(cls, **kwargs):
         cls._validate_attributes(**kwargs)
         return super().__init_subclass__(**kwargs)
-    
+
     def validate_body_params(self, to_be_validated):
         validated_data = []
         for i in to_be_validated:
@@ -343,7 +417,7 @@ class BaseSearchView(BaseView):
             validated_data.append(x.data)
 
         return validated_data
-    
+
     @staticmethod
     def build_body_params(body_params):
         params_dict = {}
@@ -359,8 +433,6 @@ class BaseSearchView(BaseView):
         filter_params = request.data.get("filter_params", {})
         validated_filter_params = self.validate_body_params(filter_params)
         return self.build_body_params(validated_filter_params)
-    
-
 
     # building a filter_params dict to be used in querying
     @staticmethod
@@ -378,7 +450,7 @@ class BaseSearchView(BaseView):
         filter_params = request.data.get("filter_params", {})
         validated_filter_params = self.validate_body_params(filter_params)
         return self.build_body_params(validated_filter_params)
-    
+
     # get exclude_params from the request
     def get_exclude_params(self, request: Request):
         exclude_params = request.data.get("exclude_params", {})
@@ -392,7 +464,6 @@ class BaseSearchView(BaseView):
 
     # search
     def post(self, request: Request):
-
         filter_params = {}
         try:
             query_params = self.get_query_params(request)
@@ -402,9 +473,13 @@ class BaseSearchView(BaseView):
             return self.send_response(
                 True, "bad_request", {"details": str(e)}, status=400
             )
+        
+        if request.query_params.get("csv"):
+            return self.send_csv(request, self.get_queryset(request, filter_params, exclude_params, **query_params),
+                                 fields=query_params["fields"])
 
         serialized_data = self.get_queryset(
-            request, filter_params,exclude_params, **query_params
+            request, filter_params, exclude_params, **query_params
         )
 
         # return the serialized queryset in a standardized manner
