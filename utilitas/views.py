@@ -110,7 +110,6 @@ class BaseView(APIView, CustomPagination):
         dic["sorts"] = self.get_sort_param(request)
         dic["expand"] = self.get_expand_param(request)
         dic["fields"] = self.get_fields_param(request)
-        dic["is_csv"] = request.query_params.get("csv")
 
         return dic
 
@@ -322,7 +321,7 @@ class BaseListView(BaseView):
             return self.send_csv(
                 request,
                 self.get_queryset(
-                    request, filter_params, exclude_params, **query_params
+                    request, filter_params, exclude_params, **query_params, True
                 ),
                 fields=query_params["fields"],
             )
@@ -505,7 +504,7 @@ class BaseSearchView(BaseView):
             return self.send_csv(
                 request,
                 self.get_queryset(
-                    request, filter_params, exclude_params, **query_params
+                    request, filter_params, exclude_params, **query_params, True
                 ),
                 fields=query_params["fields"],
             )
