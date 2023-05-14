@@ -187,10 +187,10 @@ class BaseView(APIView, CustomPagination):
         request: Request,
         filter_params=None,
         exclude_params=None,
+        is_csv=False,
         fields=None,
         sorts=None,
         expand=None,
-        is_csv=False,
     ):
         if filter_params is None:
             filter_params = {}
@@ -321,7 +321,7 @@ class BaseListView(BaseView):
             return self.send_csv(
                 request,
                 self.get_queryset(
-                    request, filter_params, exclude_params, **query_params, True
+                    request, filter_params, exclude_params, True, **query_params
                 ),
                 fields=query_params["fields"],
             )
@@ -504,7 +504,7 @@ class BaseSearchView(BaseView):
             return self.send_csv(
                 request,
                 self.get_queryset(
-                    request, filter_params, exclude_params, **query_params, True
+                    request, filter_params, exclude_params, True, **query_params
                 ),
                 fields=query_params["fields"],
             )
