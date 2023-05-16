@@ -130,17 +130,12 @@ class BaseView(APIView, CustomPagination):
             content_type="text/csv",
             headers={"Content-Disposition": "attachment; filename='data.csv'"},
         )
+
         if len(fields) == 0:
-            # TODO: clean this later
-            fields = [
-                i.name
-                for i in data.model._meta.get_fields()
-                if isinstance(
-                    i, (CharField, TextField, BigAutoField, DateField, DateTimeField)
-                )
-            ]
+            fields = data.model.get_fields(data.model)
+
         writer = csv.writer(response)
-        writer.writerow(fields)
+        writer.writerow(data.model.get_user_friendly_fields(data.model, fields))
         for i in data:
             lst = []
             for j in fields:
@@ -321,7 +316,7 @@ class BaseListView(BaseView):
             return self.send_csv(
                 request,
                 self.get_queryset(
-                    request, filter_params, exclude_params, True, **query_params
+                    request, None, None, True, **query_params
                 ),
                 fields=query_params["fields"],
             )

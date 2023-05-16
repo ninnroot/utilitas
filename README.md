@@ -112,6 +112,8 @@ requests.get("api/books?csv=true")
 ## Changelog
 
 
+- 1.3.6
+    - added an alias option for model fields. (user_friendly_field attribute)
 - 1.3.5
     - bug fixes
 - 1.3.4
