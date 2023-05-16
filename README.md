@@ -111,6 +111,8 @@ requests.get("api/books?csv=true")
 
 ## Changelog
 
+- 1.3.9
+    - bug fixes
 - 1.3.8
     - bug fixes
 - 1.3.7

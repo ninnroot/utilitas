@@ -311,6 +311,13 @@ class BaseListView(BaseView):
         # if meta query_param is present, return metadata of the current endpoint
         if request.GET.get("meta"):
             return self.send_metadata(request)
+        
+        try:
+            query_params = self.get_query_params(request)
+        except BadRequest as e:
+            return self.send_response(
+                True, "bad_request", {"details": str(e)}, status=400
+            )
 
         if request.query_params.get("csv"):
             return self.send_csv(
@@ -321,12 +328,7 @@ class BaseListView(BaseView):
                 fields=query_params["fields"],
             )
 
-        try:
-            query_params = self.get_query_params(request)
-        except BadRequest as e:
-            return self.send_response(
-                True, "bad_request", {"details": str(e)}, status=400
-            )
+
 
         serialized_data = self.get_queryset(request, **query_params)
 
