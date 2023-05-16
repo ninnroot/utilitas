@@ -1,5 +1,5 @@
 from django.db import models
-
+import typing
 RELATION_FIELDS = ["ForeignKey", "OneToOneField"]
 
 class BaseModel(models.Model):
