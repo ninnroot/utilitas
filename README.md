@@ -111,6 +111,8 @@ requests.get("api/books?csv=true")
 
 ## Changelog
 
+- 1.3.10
+    - bulk-creation bug fixed. Dumb me didn't change anything in the views.py file D:
 - 1.3.9
     - bug fixes
 - 1.3.8

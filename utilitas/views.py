@@ -339,9 +339,38 @@ class BaseListView(BaseView):
             {**self.get_paginated_response(), "data": serialized_data.data},
             status=status.HTTP_200_OK,
         )
+    
 
     # create
     def post(self, request: Request):
+        if request.query_params.get("bulk", None):
+            objs = request.data.get("objects", None)
+
+            if objs is None:
+                return self.send_response(
+                    True, "Missing 'objects' parameter in request body.", {}
+                )
+            serialized_data = self.get_serializer(
+                data=request.data["objects"], many=True
+            )
+
+            if serialized_data.is_valid():
+                serialized_data.save()
+                return self.send_response(
+                    False,
+                    "bulk-created",
+                    {"data": serialized_data.data},
+                    status=status.HTTP_201_CREATED,
+                )
+
+            return self.send_response(
+                True,
+                "creation failed because of some errors. 0 objects were created.",
+                {"details": serialized_data.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
         serialized_data = self.get_serializer(
             data=request.data,
         )
