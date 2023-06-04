@@ -1,6 +1,7 @@
 from rest_flex_fields import FlexFieldsModelSerializer
 from rest_framework import serializers
 
+
 class BaseListSerializer(serializers.ListSerializer):
     def validate(self, attrs):
         return super().validate(attrs)
@@ -20,7 +21,6 @@ class BaseModelSerializer(FlexFieldsModelSerializer):
         list_serializer_class = BaseListSerializer
 
 
-
 class BaseSerializer(serializers.Serializer):
     pass
 
@@ -30,11 +30,20 @@ class FilterParamSerializer(BaseSerializer):
     operator = serializers.CharField(max_length=256, default="exact")
     value = serializers.CharField(max_length=256, required=True)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(self, *args, **kwargs)
+        self.available_fields = [
+            i.name for i in self.context["model"]._meta.get_fields()
+        ]
+
     def validate(self, data, *args, **kwargs):
         if data["operator"] not in self.context["model"].valid_operators:
             raise serializers.ValidationError(
                 f"{data['operator']} is not in valid operators of {self.context['model'].__name__}. "
                 f"Valid operators: {self.context['model'].valid_operators}"
             )
-
+        if data["field_name"] not in self.available_fields:
+            raise serializers.ValidationError(
+                f"Cannot resolve field name \"{data['field_name']}\". Choices are {self.available_fields}"
+            )
         return data

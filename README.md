@@ -111,6 +111,10 @@ requests.get("api/books?csv=true")
 
 ## Changelog
 
+- 1.3.12
+    - added field validation in search endpoint's filter_param
+- 1.3.11
+    - made the '_translate_expand_params' function public
 - 1.3.10
     - bulk-creation bug fixed. Dumb me didn't change anything in the views.py file D:
 - 1.3.9

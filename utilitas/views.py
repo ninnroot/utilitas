@@ -66,7 +66,7 @@ class BaseView(APIView, CustomPagination):
 
     # Some `expand` parameters cannot be present in the model's foreign keys (client's mistakes).
     # To avoid being a chatty API, we will just quietly ignore thier mistakes.
-    def _translate_expand_params(self, expand):
+    def translate_expand_params(self, expand):
         translated_expand = []
         # Replacing dots with Django ORM's format.
         for i in expand:
@@ -165,7 +165,7 @@ class BaseView(APIView, CustomPagination):
             expand = []
         # query from the database
 
-        translated_expand = self._translate_expand_params(expand)
+        translated_expand = self.translate_expand_params(expand)
 
         queryset = (
             self.model.objects.filter(**filter_params)
@@ -201,7 +201,7 @@ class BaseView(APIView, CustomPagination):
         if not is_csv:
             # query from the database
 
-            translated_expand = self._translate_expand_params(expand)
+            translated_expand = self.translate_expand_params(expand)
 
             queryset = (
                 self.model.objects.filter(**filter_params)
