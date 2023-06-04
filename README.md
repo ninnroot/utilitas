@@ -111,6 +111,8 @@ requests.get("api/books?csv=true")
 
 ## Changelog
 
+- 1.3.13
+    - bug fixes
 - 1.3.12
     - added field validation in search endpoint's filter_param
 - 1.3.11
