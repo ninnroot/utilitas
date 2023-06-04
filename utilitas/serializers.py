@@ -30,13 +30,11 @@ class FilterParamSerializer(BaseSerializer):
     operator = serializers.CharField(max_length=256, default="exact")
     value = serializers.CharField(max_length=256, required=True)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
-        self.available_fields = [
-            i.name for i in self.context["model"]._meta.get_fields()
-        ]
 
     def validate(self, data, *args, **kwargs):
+        self.available_fields = [
+            i.name for i in self.context["model"]._meta.get_fields()
+         ]
         if data["operator"] not in self.context["model"].valid_operators:
             raise serializers.ValidationError(
                 f"{data['operator']} is not in valid operators of {self.context['model'].__name__}. "
