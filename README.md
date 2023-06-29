@@ -111,6 +111,9 @@ requests.get("api/books?csv=true")
 
 ## Changelog
 
+- 1.3.14
+    - removed field validatoin for filter_param
+
 - 1.3.13
     - bug fixes
 - 1.3.12
