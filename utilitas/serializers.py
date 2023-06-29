@@ -40,8 +40,8 @@ class FilterParamSerializer(BaseSerializer):
                 f"{data['operator']} is not in valid operators of {self.context['model'].__name__}. "
                 f"Valid operators: {self.context['model'].valid_operators}"
             )
-        if data["field_name"] not in self.available_fields:
-            raise serializers.ValidationError(
-                f"Cannot resolve field name \"{data['field_name']}\". Choices are {self.available_fields}"
-            )
+        # if data["field_name"] not in self.available_fields:
+        #     raise serializers.ValidationError(
+        #         f"Cannot resolve field name \"{data['field_name']}\". Choices are {self.available_fields}"
+        #     )
         return data

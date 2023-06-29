@@ -3,7 +3,7 @@ from typing import Collection
 RELATION_FIELDS = ["ForeignKey", "OneToOneField"]
 
 class BaseModel(models.Model):
-    valid_operators = ["exact", "iexact", "in", "lt", "gt", "lte", "gte", "icontains"]
+    valid_operators = ["exact", "iexact", "in", "lt", "gt", "lte", "gte", "icontains","isnull"]
 
     def __init__(self, *args, **kwargs):
         chosen_set = set(self.chosen_one_fields)
